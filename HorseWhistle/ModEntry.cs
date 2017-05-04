@@ -66,7 +66,6 @@ namespace HorseWhistle
         /// <param name="e">The event data.</param>
         private void ReceiveKeyPress(object sender, EventArgsKeyPressed e)
         {
-            Monitor.Log($"Player pressed {e.KeyPressed}.");
             if (!IsLoaded)
                 return;
 
@@ -77,7 +76,7 @@ namespace HorseWhistle
             if (e.KeyPressed.ToString() == Config.TeleportHorseKey)
             {
                 NPC horse = Utility.findHorse();
-                if (horse != null && Game1.currentLocation.IsOutdoors)
+                if (horse != null)
                 {
                     if (OriginalSoundBank != null && OriginalWaveBank != null)
                     {
