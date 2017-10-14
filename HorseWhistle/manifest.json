@@ -9,5 +9,6 @@
   },
   "Description": "Press V to call horse to any outdoor location with a whistle audio clip. Also enables a grid when G is pressed",
   "UniqueID": "icepuente.HorseWhistle",
-  "EntryDll": "HorseWhistle.dll"
+  "EntryDll": "HorseWhistle.dll",
+  "UpdateKeys": [ "Nexus:1131" ]
 }
