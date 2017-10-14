@@ -25,8 +25,8 @@ namespace HorseWhistle
         private WaveBank OriginalWaveBank;
         private SoundBank CustomSoundBank;
         private WaveBank CustomWaveBank;
-
-        internal ModConfigModel Config;
+        private bool HasAudio;
+        private ModConfigModel Config;
 
 
         /*********
@@ -38,8 +38,17 @@ namespace HorseWhistle
         {
             Config = helper.ReadConfig<ModConfigModel>();
 
-            CustomSoundBank = new SoundBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb"));
-            CustomWaveBank = new WaveBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
+            try
+            {
+                CustomSoundBank = new SoundBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb"));
+                CustomWaveBank = new WaveBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
+                HasAudio = true;
+            }
+            catch (ArgumentException ex)
+            {
+                this.Monitor.Log("Couldn't load audio (this is normal on Linux/Mac). The mod will work fine without audio.");
+                this.Monitor.Log(ex.ToString(), LogLevel.Trace);
+            }
 
             // add all event listener methods
             ControlEvents.KeyPressed += ReceiveKeyPress;
@@ -85,6 +94,9 @@ namespace HorseWhistle
 
         private void PlayHorseWhistle()
         {
+            if (!HasAudio)
+                return;
+
             Game1.soundBank = CustomSoundBank;
             Game1.waveBank = CustomWaveBank;
             Game1.audioEngine.Update();
