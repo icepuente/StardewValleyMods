@@ -1,16 +1,15 @@
-﻿using HorseWhistle.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using HorseWhistle.Common;
 using HorseWhistle.Models;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using xTile.Dimensions;
-using System.IO;
 
 namespace HorseWhistle
 {
@@ -20,17 +19,15 @@ namespace HorseWhistle
         /*********
         ** Properties
         *********/
-        private static IModHelper helper;
-        private static GameLocation[] Locations;
-        private static TileData[] Tiles;
-        private static bool IsLoaded => Game1.hasLoadedGame && ModEntry.Locations != null;
-        private static bool GridActive = false;
-        private static SoundBank OriginalSoundBank;
-        private static WaveBank OriginalWaveBank;
-        private static SoundBank CustomSoundBank;
-        private static WaveBank CustomWaveBank;
+        private TileData[] Tiles;
+        private bool GridActive = false;
+        private SoundBank OriginalSoundBank;
+        private WaveBank OriginalWaveBank;
+        private SoundBank CustomSoundBank;
+        private WaveBank CustomWaveBank;
+        private bool HasAudio;
+        private ModConfigModel Config;
 
-        internal static ModConfigModel Config;
 
         /*********
         ** Public methods
@@ -39,24 +36,32 @@ namespace HorseWhistle
         /// <param name="helper">Provides methods for interacting with the mod directory, such as read/writing a config file or custom JSON files.</param>
         public override void Entry(IModHelper helper)
         {
-            ModEntry.helper = helper;
             Config = helper.ReadConfig<ModConfigModel>();
 
-            CustomSoundBank = new SoundBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb"));
-            CustomWaveBank = new WaveBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
+            try
+            {
+                CustomSoundBank = new SoundBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb"));
+                CustomWaveBank = new WaveBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
+                HasAudio = true;
+            }
+            catch (ArgumentException ex)
+            {
+                this.Monitor.Log("Couldn't load audio (this is normal on Linux/Mac). The mod will work fine without audio.");
+                this.Monitor.Log(ex.ToString(), LogLevel.Trace);
+            }
 
             // add all event listener methods
             ControlEvents.KeyPressed += ReceiveKeyPress;
-            LocationEvents.LocationsChanged += LocationChangedEvent;
-            GameEvents.SecondUpdateTick += (sender, e) => ReceiveUpdateTick();
+            GameEvents.SecondUpdateTick += ReceiveUpdateTick;
             GraphicsEvents.OnPostRenderEvent += OnPostRenderEvent;
         }
 
         /// <summary>Update the mod's config.json file from the current <see cref="Config"/>.</summary>
-        internal static void SaveConfig()
+        internal void SaveConfig()
         {
-            helper.WriteConfig(Config);
+            Helper.WriteConfig(Config);
         }
+
 
         /*********
         ** Private methods
@@ -66,7 +71,7 @@ namespace HorseWhistle
         /// <param name="e">The event data.</param>
         private void ReceiveKeyPress(object sender, EventArgsKeyPressed e)
         {
-            if (!IsLoaded)
+            if (!Context.IsPlayerFree)
                 return;
 
             if (e.KeyPressed.ToString() == Config.EnableGridKey)
@@ -81,7 +86,7 @@ namespace HorseWhistle
                     if (OriginalSoundBank != null && OriginalWaveBank != null)
                     {
                         PlayHorseWhistle();
-                    }                
+                    }
                     Game1.warpCharacter(horse, Game1.currentLocation.Name, Game1.player.getLeftMostTileX(), true, true);
                 }
             }
@@ -89,6 +94,9 @@ namespace HorseWhistle
 
         private void PlayHorseWhistle()
         {
+            if (!HasAudio)
+                return;
+
             Game1.soundBank = CustomSoundBank;
             Game1.waveBank = CustomWaveBank;
             Game1.audioEngine.Update();
@@ -106,17 +114,7 @@ namespace HorseWhistle
             Draw(Game1.spriteBatch);
         }
 
-        private void AfterLoadSaveEvent(object sender, EventArgs eventArgs)
-        {
-            Locations = CommonMethods.GetAllLocations().ToArray();
-        }
-
-        private void LocationChangedEvent(object sender, EventArgs eventArgs)
-        {
-            Locations = CommonMethods.GetAllLocations().ToArray();
-        }
-
-        private void ReceiveUpdateTick()
+        private void ReceiveUpdateTick(object sender, EventArgs e)
         {
             if (Game1.currentLocation == null)
             {
@@ -152,12 +150,8 @@ namespace HorseWhistle
         {
             foreach (Vector2 tile in visibleTiles)
             {
-                bool isPassable = location.isTilePassable(new Location((int)tile.X, (int)tile.Y), Game1.viewport);
-
                 if (location.isTileLocationTotallyClearAndPlaceableIgnoreFloors(tile))
-                {
                     yield return new TileData(tile, Color.Red);
-                } 
             }
         }
     }
