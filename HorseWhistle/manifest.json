@@ -2,7 +2,7 @@
   "Name": "Horse Whistle Mod",
   "Author": "icepuente",
   "Version": "1.1.1",
-  "Description": "Press V to call your horse to any outdoor location with an audible whistle. Also enables a grid when G is pressed.",
+  "Description": "Press V to call your horse to any outdoor location with an audible whistle.",
   "UniqueID": "icepuente.HorseWhistle",
   "EntryDll": "HorseWhistle.dll",
   "MinimumApiVersion": "2.6-beta",

@@ -68,9 +68,9 @@ namespace HorseWhistle
             if (!Context.IsPlayerFree)
                 return;
 
-            if (e.Button == Config.EnableGridKey)
-                GridActive = !GridActive;
-            else if (e.Button == Config.TeleportHorseKey)
+            if (this.Config.EnableGrid && e.Button == this.Config.EnableGridKey)
+                this.GridActive = !this.GridActive;
+            else if (e.Button == this.Config.TeleportHorseKey)
             {
                 Horse horse = this.FindHorse();
                 if (horse != null)
