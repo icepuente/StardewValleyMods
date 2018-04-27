@@ -52,9 +52,9 @@ namespace HorseWhistle
             }
 
             // add all event listener methods
-            ControlEvents.KeyPressed += ReceiveKeyPress;
-            GameEvents.SecondUpdateTick += ReceiveUpdateTick;
-            GraphicsEvents.OnPostRenderEvent += OnPostRenderEvent;
+            InputEvents.ButtonPressed += this.InputEvents_ButtonPressed;
+            GameEvents.SecondUpdateTick += this.GameEvents_SecondUpdateTick;
+            GraphicsEvents.OnPostRenderEvent += this.GraphicsEvents_OnPostRenderEvent;
         }
 
         /// <summary>Update the mod's config.json file from the current <see cref="Config"/>.</summary>
@@ -70,14 +70,14 @@ namespace HorseWhistle
         /// <summary>The method invoked when the player presses a keyboard button.</summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
-        private void ReceiveKeyPress(object sender, EventArgsKeyPressed e)
+        private void InputEvents_ButtonPressed(object sender, EventArgsInput e)
         {
             if (!Context.IsPlayerFree)
                 return;
 
-            if (e.KeyPressed.ToString() == Config.EnableGridKey)
+            if (e.Button == Config.EnableGridKey)
                 GridActive = !GridActive;
-            else if (e.KeyPressed.ToString() == Config.TeleportHorseKey)
+            else if (e.Button == Config.TeleportHorseKey)
             {
                 Horse horse = this.FindHorse();
                 if (horse != null)
@@ -114,12 +114,12 @@ namespace HorseWhistle
         // <summary>The method called when the game finishes drawing components to the screen.</summary>
         /// <param name="sender">The source of the event.</param>
         /// <param name="e">The event arguments.</param>
-        private void OnPostRenderEvent(object sender, EventArgs e)
+        private void GraphicsEvents_OnPostRenderEvent(object sender, EventArgs e)
         {
             Draw(Game1.spriteBatch);
         }
 
-        private void ReceiveUpdateTick(object sender, EventArgs e)
+        private void GameEvents_SecondUpdateTick(object sender, EventArgs e)
         {
             if (Game1.currentLocation == null)
             {
