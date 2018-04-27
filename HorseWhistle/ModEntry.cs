@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using HorseWhistle.Common;
 using HorseWhistle.Models;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
@@ -55,12 +54,6 @@ namespace HorseWhistle
             InputEvents.ButtonPressed += this.InputEvents_ButtonPressed;
             GameEvents.SecondUpdateTick += this.GameEvents_SecondUpdateTick;
             GraphicsEvents.OnPostRenderEvent += this.GraphicsEvents_OnPostRenderEvent;
-        }
-
-        /// <summary>Update the mod's config.json file from the current <see cref="Config"/>.</summary>
-        internal void SaveConfig()
-        {
-            Helper.WriteConfig(Config);
         }
 
 
@@ -142,7 +135,7 @@ namespace HorseWhistle
             foreach (TileData tile in Tiles.ToArray())
             {
                 Vector2 position = tile.TilePosition * tileSize - new Vector2(Game1.viewport.X, Game1.viewport.Y);
-                RectangleSprite.DrawRectangle(spriteBatch, new Microsoft.Xna.Framework.Rectangle((int)position.X, (int)position.Y, tileSize, tileSize), tile.Color * .3f, 6);
+                RectangleSprite.DrawRectangle(spriteBatch, new Rectangle((int)position.X, (int)position.Y, tileSize, tileSize), tile.Color * .3f, 6);
             }
         }
 
