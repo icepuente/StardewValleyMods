@@ -10,6 +10,9 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Buildings;
+using StardewValley.Characters;
+using StardewValley.Locations;
 
 namespace HorseWhistle
 {
@@ -20,10 +23,8 @@ namespace HorseWhistle
         ** Properties
         *********/
         private TileData[] Tiles;
-        private bool GridActive = false;
-        private SoundBank OriginalSoundBank;
-        private WaveBank OriginalWaveBank;
-        private SoundBank CustomSoundBank;
+        private bool GridActive;
+        private ISoundBank CustomSoundBank;
         private WaveBank CustomWaveBank;
         private bool HasAudio;
         private ModConfigModel Config;
@@ -40,7 +41,7 @@ namespace HorseWhistle
 
             try
             {
-                CustomSoundBank = new SoundBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb"));
+                CustomSoundBank = new SoundBankWrapper(new SoundBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb")));
                 CustomWaveBank = new WaveBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
                 HasAudio = true;
             }
@@ -75,35 +76,39 @@ namespace HorseWhistle
                 return;
 
             if (e.KeyPressed.ToString() == Config.EnableGridKey)
-            {
                 GridActive = !GridActive;
-            }
-            if (e.KeyPressed.ToString() == Config.TeleportHorseKey)
+            else if (e.KeyPressed.ToString() == Config.TeleportHorseKey)
             {
-                NPC horse = Utility.findHorse();
+                Horse horse = this.FindHorse();
                 if (horse != null)
                 {
-                    if (OriginalSoundBank != null && OriginalWaveBank != null)
-                    {
-                        PlayHorseWhistle();
-                    }
-                    Game1.warpCharacter(horse, Game1.currentLocation.Name, Game1.player.getLeftMostTileX(), true, true);
+                    this.PlayHorseWhistle();
+                    Game1.warpCharacter(horse, Game1.currentLocation, Game1.player.getTileLocation());
                 }
             }
         }
 
+        /// <summary>Play the horse whistle sound.</summary>
         private void PlayHorseWhistle()
         {
-            if (!HasAudio)
+            if (!this.HasAudio)
                 return;
 
-            Game1.soundBank = CustomSoundBank;
-            Game1.waveBank = CustomWaveBank;
-            Game1.audioEngine.Update();
-            Game1.playSound("horseWhistle");
-            Game1.soundBank = OriginalSoundBank;
-            Game1.waveBank = OriginalWaveBank;
-            Game1.audioEngine.Update();
+            ISoundBank originalSoundBank = Game1.soundBank;
+            WaveBank originalWaveBank = Game1.waveBank;
+            try
+            {
+                Game1.soundBank = this.CustomSoundBank;
+                Game1.waveBank = this.CustomWaveBank;
+                Game1.audioEngine.Update();
+                Game1.playSound("horseWhistle");
+            }
+            finally
+            {
+                Game1.soundBank = originalSoundBank;
+                Game1.waveBank = originalWaveBank;
+                Game1.audioEngine.Update();
+            }
         }
 
         // <summary>The method called when the game finishes drawing components to the screen.</summary>
@@ -121,11 +126,6 @@ namespace HorseWhistle
                 Tiles = new TileData[0];
                 return;
             }
-
-            if (OriginalSoundBank == null && Game1.soundBank != null)
-                OriginalSoundBank = Game1.soundBank;
-            if (OriginalWaveBank == null && Game1.waveBank != null)
-                OriginalWaveBank = Game1.waveBank;
 
             // get updated tiles
             GameLocation location = Game1.currentLocation;
@@ -152,6 +152,38 @@ namespace HorseWhistle
             {
                 if (location.isTileLocationTotallyClearAndPlaceableIgnoreFloors(tile))
                     yield return new TileData(tile, Color.Red);
+            }
+        }
+
+        /// <summary>Find the current player's horse.</summary>
+        private Horse FindHorse()
+        {
+            foreach (Stable stable in this.GetStables())
+            {
+                if (Context.IsMultiplayer && stable.owner.Value != Game1.player.UniqueMultiplayerID)
+                    continue;
+
+                Horse horse = Utility.findHorse(stable.HorseId);
+                if (horse == null || horse.rider != null)
+                    continue;
+
+                return horse;
+            }
+
+            return null;
+        }
+
+        /// <summary>Get all stables in the game.</summary>
+        private IEnumerable<Stable> GetStables()
+        {
+            foreach (BuildableGameLocation location in Game1.locations.OfType<BuildableGameLocation>())
+            {
+                foreach (Stable stable in location.buildings.OfType<Stable>())
+                {
+                    if (stable.GetType().FullName?.Contains("TractorMod") == true)
+                        continue; // ignore tractor
+                    yield return stable;
+                }
             }
         }
     }

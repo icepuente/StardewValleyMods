@@ -51,8 +51,9 @@ namespace HorseWhistle.Common
                 {
                     foreach (Building building in buildableLocation.buildings)
                     {
-                        if (building.indoors != null)
-                            yield return building.indoors;
+                        GameLocation indoors = building.indoors.Value;
+                        if (indoors != null)
+                            yield return indoors;
                     }
                 }
             }
