@@ -5,6 +5,6 @@
   "Description": "Press V to call your horse to any outdoor location with an audible whistle.",
   "UniqueID": "icepuente.HorseWhistle",
   "EntryDll": "HorseWhistle.dll",
-  "MinimumApiVersion": "2.6-beta",
+  "MinimumApiVersion": "2.6-beta.4",
   "UpdateKeys": [ "Nexus:1131" ]
 }

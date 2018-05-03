@@ -38,22 +38,32 @@ namespace HorseWhistle
         {
             Config = helper.ReadConfig<ModConfigModel>();
 
-            try
+            if (Constants.TargetPlatform == GamePlatform.Windows)
             {
-                CustomSoundBank = new SoundBankWrapper(new SoundBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb")));
-                CustomWaveBank = new WaveBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
-                HasAudio = true;
-            }
-            catch (ArgumentException ex)
-            {
-                this.Monitor.Log("Couldn't load audio (this is normal on Linux/Mac). The mod will work fine without audio.");
-                this.Monitor.Log(ex.ToString(), LogLevel.Trace);
+                try
+                {
+                    this.CustomSoundBank = new SoundBankWrapper(new SoundBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb")));
+                    this.CustomWaveBank = new WaveBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
+                    this.HasAudio = true;
+                }
+                catch (ArgumentException ex)
+                {
+                    this.CustomSoundBank = null;
+                    this.CustomWaveBank = null;
+                    this.HasAudio = false;
+
+                    this.Monitor.Log("Couldn't load audio, so the whistle sound won't play.");
+                    this.Monitor.Log(ex.ToString(), LogLevel.Trace);
+                }
             }
 
             // add all event listener methods
             InputEvents.ButtonPressed += this.InputEvents_ButtonPressed;
-            GameEvents.SecondUpdateTick += this.GameEvents_SecondUpdateTick;
-            GraphicsEvents.OnPostRenderEvent += this.GraphicsEvents_OnPostRenderEvent;
+            if (this.Config.EnableGrid)
+            {
+                GameEvents.SecondUpdateTick += (sender, e) => this.UpdateGrid();
+                GraphicsEvents.OnPostRenderEvent += (sender, e) => this.DrawGrid(Game1.spriteBatch);
+            }
         }
 
 
@@ -68,9 +78,7 @@ namespace HorseWhistle
             if (!Context.IsPlayerFree)
                 return;
 
-            if (this.Config.EnableGrid && e.Button == this.Config.EnableGridKey)
-                this.GridActive = !this.GridActive;
-            else if (e.Button == this.Config.TeleportHorseKey)
+            if (e.Button == this.Config.TeleportHorseKey)
             {
                 Horse horse = this.FindHorse();
                 if (horse != null)
@@ -79,6 +87,8 @@ namespace HorseWhistle
                     Game1.warpCharacter(horse, Game1.currentLocation, Game1.player.getTileLocation());
                 }
             }
+            else if (this.Config.EnableGrid && e.Button == this.Config.EnableGridKey)
+                this.GridActive = !this.GridActive;
         }
 
         /// <summary>Play the horse whistle sound.</summary>
@@ -101,50 +111,6 @@ namespace HorseWhistle
                 Game1.soundBank = originalSoundBank;
                 Game1.waveBank = originalWaveBank;
                 Game1.audioEngine.Update();
-            }
-        }
-
-        // <summary>The method called when the game finishes drawing components to the screen.</summary>
-        /// <param name="sender">The source of the event.</param>
-        /// <param name="e">The event arguments.</param>
-        private void GraphicsEvents_OnPostRenderEvent(object sender, EventArgs e)
-        {
-            Draw(Game1.spriteBatch);
-        }
-
-        private void GameEvents_SecondUpdateTick(object sender, EventArgs e)
-        {
-            if (Game1.currentLocation == null)
-            {
-                Tiles = new TileData[0];
-                return;
-            }
-
-            // get updated tiles
-            GameLocation location = Game1.currentLocation;
-            Tiles = Update(location, CommonMethods.GetVisibleTiles(location, Game1.viewport)).ToArray();
-        }
-
-        private void Draw(SpriteBatch spriteBatch)
-        {
-            if (Tiles == null || Tiles.Length == 0 || !GridActive)
-                return;
-
-            // draw tile overlay
-            int tileSize = Game1.tileSize;
-            foreach (TileData tile in Tiles.ToArray())
-            {
-                Vector2 position = tile.TilePosition * tileSize - new Vector2(Game1.viewport.X, Game1.viewport.Y);
-                RectangleSprite.DrawRectangle(spriteBatch, new Rectangle((int)position.X, (int)position.Y, tileSize, tileSize), tile.Color * .3f, 6);
-            }
-        }
-
-        private IEnumerable<TileData> Update(GameLocation location, IEnumerable<Vector2> visibleTiles)
-        {
-            foreach (Vector2 tile in visibleTiles)
-            {
-                if (location.isTileLocationTotallyClearAndPlaceableIgnoreFloors(tile))
-                    yield return new TileData(tile, Color.Red);
             }
         }
 
@@ -177,6 +143,37 @@ namespace HorseWhistle
                         continue; // ignore tractor
                     yield return stable;
                 }
+            }
+        }
+
+        private void UpdateGrid()
+        {
+            if (!this.GridActive || !Context.IsPlayerFree || Game1.currentLocation == null)
+            {
+                this.Tiles = null;
+                return;
+            }
+
+            // get updated tiles
+            GameLocation location = Game1.currentLocation;
+            this.Tiles = CommonMethods
+                .GetVisibleTiles(location, Game1.viewport)
+                .Where(tile => location.isTileLocationTotallyClearAndPlaceableIgnoreFloors(tile))
+                .Select(tile => new TileData(tile, Color.Red))
+                .ToArray();
+        }
+
+        private void DrawGrid(SpriteBatch spriteBatch)
+        {
+            if (!this.GridActive || !Context.IsPlayerFree || Tiles == null || Tiles.Length == 0)
+                return;
+
+            // draw tile overlay
+            int tileSize = Game1.tileSize;
+            foreach (TileData tile in Tiles.ToArray())
+            {
+                Vector2 position = tile.TilePosition * tileSize - new Vector2(Game1.viewport.X, Game1.viewport.Y);
+                RectangleSprite.DrawRectangle(spriteBatch, new Rectangle((int)position.X, (int)position.Y, tileSize, tileSize), tile.Color * .3f, 6);
             }
         }
     }
