@@ -10,15 +10,15 @@ namespace HorseWhistle
     {
         public static IEnumerable<Vector2> GetVisibleTiles(GameLocation currentLocation, XRectangle viewport)
         {
-            int tileSize = Game1.tileSize;
-            int left = viewport.X / tileSize;
-            int top = viewport.Y / tileSize;
-            int right = (int)Math.Ceiling((viewport.X + viewport.Width) / (decimal)tileSize);
-            int bottom = (int)Math.Ceiling((viewport.Y + viewport.Height) / (decimal)tileSize);
+            const int tileSize = Game1.tileSize;
+            var left = viewport.X / tileSize;
+            var top = viewport.Y / tileSize;
+            var right = (int) Math.Ceiling((viewport.X + viewport.Width) / (decimal) tileSize);
+            var bottom = (int) Math.Ceiling((viewport.Y + viewport.Height) / (decimal) tileSize);
 
-            for (int x = left; x < right; x++)
+            for (var x = left; x < right; x++)
             {
-                for (int y = top; y < bottom; y++)
+                for (var y = top; y < bottom; y++)
                 {
                     if (currentLocation.isTileOnMap(x, y))
                         yield return new Vector2(x, y);
