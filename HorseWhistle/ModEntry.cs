@@ -40,7 +40,7 @@ namespace HorseWhistle
         {
             _config = helper.ReadConfig<ModConfigModel>();
 
-            if (Constants.TargetPlatform == GamePlatform.Windows)
+            if (Constants.TargetPlatform == GamePlatform.Windows && _config.EnableWhistleAudio)
             {
                 try
                 {
@@ -94,8 +94,7 @@ namespace HorseWhistle
         /// <summary>Play the horse whistle sound.</summary>
         private void PlayHorseWhistle()
         {
-            if (!_hasAudio)
-                return;
+            if (!_hasAudio || !_config.EnableWhistleAudio) return;
 
             var originalSoundBank = Game1.soundBank;
             var originalWaveBank = Game1.waveBank;

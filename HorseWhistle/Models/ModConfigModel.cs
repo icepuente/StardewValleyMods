@@ -2,9 +2,10 @@
 
 namespace HorseWhistle.Models
 {
-    class ModConfigModel
+    internal class ModConfigModel
     {
-        public bool EnableGrid { get; set; } = true;
+        public bool EnableGrid { get; set; } = false;
+        public bool EnableWhistleAudio { get; set; } = true;
         public SButton EnableGridKey { get; set; } = SButton.G;
         public SButton TeleportHorseKey { get; set; } = SButton.V;
     }
