@@ -132,27 +132,41 @@ namespace HorseWhistle
             }
         }
 
+        /// <summary>Get all available locations.</summary>
+        private IEnumerable<GameLocation> GetLocations()
+        {
+            GameLocation[] mainLocations = (Context.IsMainPlayer ? Game1.locations : this.Helper.Multiplayer.GetActiveLocations()).ToArray();
+
+            foreach (GameLocation location in mainLocations.Concat(MineShaft.activeMines))
+            {
+                yield return location;
+
+                if (location is BuildableGameLocation buildableLocation)
+                {
+                    foreach (Building building in buildableLocation.buildings)
+                    {
+                        if (building.indoors.Value != null)
+                            yield return building.indoors.Value;
+                    }
+                }
+            }
+        }
+
         /// <summary>Find the current player's horse.</summary>
         private Horse FindHorse()
         {
-            return
-                (
-                    from stable in GetStables()
-                    where !Context.IsMultiplayer || stable.owner.Value == Game1.player.UniqueMultiplayerID
-                    select Utility.findHorse(stable.HorseId)
-                )
-                .FirstOrDefault(horse => horse != null && horse.rider == null);
-        }
+            foreach (GameLocation location in this.GetLocations())
+            {
+                foreach (Horse horse in location.characters.OfType<Horse>())
+                {
+                    if (horse.rider != null || horse.Name.StartsWith("tractor/"))
+                        continue;
 
-        /// <summary>Get all stables in the game.</summary>
-        private IEnumerable<Stable> GetStables()
-        {
-            return (
-                from location in Game1.locations.OfType<BuildableGameLocation>()
-                from stable in location.buildings.OfType<Stable>()
-                where stable.GetType().FullName?.Contains("TractorMod") != true
-                select stable
-            );
+                    return horse;
+                }
+            }
+
+            return null;
         }
 
         private void UpdateGrid()
