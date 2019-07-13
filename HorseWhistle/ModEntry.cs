@@ -44,10 +44,8 @@ namespace HorseWhistle
             {
                 try
                 {
-                    _customSoundBank = new SoundBankWrapper(new SoundBank(Game1.audioEngine,
-                        Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb")));
-                    _customWaveBank = new WaveBank(Game1.audioEngine,
-                        Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
+                    _customSoundBank = new SoundBankWrapper(new SoundBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb")));
+                    _customWaveBank = new WaveBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
                     _hasAudio = true;
                 }
                 catch (ArgumentException ex)
@@ -82,7 +80,7 @@ namespace HorseWhistle
             if (!Context.IsPlayerFree)
                 return;
 
-            if (e.Button == _config.TeleportHorseKey)
+            if (e.Button == _config.TeleportHorseKey && !Game1.player.isRidingHorse())
             {
                 var horse = FindHorse();
                 if (horse == null) return;
