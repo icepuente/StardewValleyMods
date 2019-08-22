@@ -3,13 +3,13 @@
   <PropertyGroup>
     <AssemblyName>HorseWhistle</AssemblyName>
     <RootNamespace>HorseWhistle</RootNamespace>
-    <Version>1.2.2</Version>
+    <Version>1.2.3</Version>
     <TargetFramework>net452</TargetFramework>
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="3.0.0-beta.7" />
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="3.0.0-beta.8" />
   </ItemGroup>
 
 </Project>

@@ -44,8 +44,8 @@ namespace HorseWhistle
             {
                 try
                 {
-                    _customSoundBank = new SoundBankWrapper(new SoundBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb")));
-                    _customWaveBank = new WaveBank(Game1.audioEngine, Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
+                    _customSoundBank = new SoundBankWrapper(new SoundBank(Game1.audioEngine.Engine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb")));
+                    _customWaveBank = new WaveBank(Game1.audioEngine.Engine, Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
                     _hasAudio = true;
                 }
                 catch (ArgumentException ex)
