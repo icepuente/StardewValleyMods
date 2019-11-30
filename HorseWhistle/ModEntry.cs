@@ -61,6 +61,7 @@ namespace HorseWhistle
 
             // add event listeners
             helper.Events.Input.ButtonPressed += this.OnButtonPressed;
+            helper.Events.Multiplayer.ModMessageReceived += ModMessageReceived;
             if (_config.EnableGrid)
             {
                 helper.Events.GameLoop.UpdateTicked += this.UpdateTicked;
@@ -77,18 +78,33 @@ namespace HorseWhistle
         /// <param name="e">The event data.</param>
         private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
         {
-            if (!Context.IsPlayerFree)
-                return;
+            if (!Context.IsPlayerFree) return;
 
             if (e.Button == _config.TeleportHorseKey && !Game1.player.isRidingHorse() && !Game1.player.isAnimatingMount)
             {
-                var horse = FindHorse();
-                if (horse == null) return;
-                PlayHorseWhistle();
-                Game1.warpCharacter(horse, Game1.currentLocation, Game1.player.getTileLocation());
+                if (Context.IsMainPlayer)
+                    WarpHorse();
+                else //if the current player is a multiplayer farmhand
+                    Helper.Multiplayer.SendMessage(message: true, messageType: "RequestHorse", modIDs: new string[] { ModManifest.UniqueID }); //request a horse from the host player
             }
             else if (_config.EnableGrid && e.Button == _config.EnableGridKey)
                 _gridActive = !_gridActive;
+        }
+
+        /// <summary>Raised after the a mod message is received over the network.</summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event data.</param>
+        private void ModMessageReceived(object sender, ModMessageReceivedEventArgs e)
+        {
+            if (!Context.IsMainPlayer) return;
+
+            //if a multiplayer farmhand sent a horse request, warp a horse to them
+            if (e.Type == "RequestHorse")
+            {
+                Farmer requester = Game1.getFarmer(e.FromPlayerID);
+                if (requester != null)
+                    WarpHorse(requester);
+            }
         }
 
         /// <summary>Raised after the game state is updated (≈60 times per second).</summary>
@@ -165,6 +181,28 @@ namespace HorseWhistle
             }
 
             return null;
+        }
+
+        /// <summary>Warps a horse to a player's location.</summary>
+        /// <param name="player">The player to which the horse will warp. If null, this will default to the current player.</param>
+        private void WarpHorse(Farmer player = null)
+        {
+            //default to the current player
+            if (player == null)
+                player = Game1.player;
+
+            //prevent warping to locations that might lose or delete the horse NPC
+            if (player.currentLocation is MineShaft || !GetLocations().Contains(player.currentLocation))
+                return;
+
+            //get a horse
+            var horse = FindHorse();
+            if (horse == null)
+                return;
+
+            //warp the horse to the target player
+            PlayHorseWhistle();
+            Game1.warpCharacter(horse, player.currentLocation, player.getTileLocation());
         }
 
         private void UpdateGrid()
