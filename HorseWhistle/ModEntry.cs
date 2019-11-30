@@ -80,7 +80,7 @@ namespace HorseWhistle
             if (!Context.IsPlayerFree)
                 return;
 
-            if (e.Button == _config.TeleportHorseKey && !Game1.player.isRidingHorse())
+            if (e.Button == _config.TeleportHorseKey && !Game1.player.isRidingHorse() && !Game1.player.isAnimatingMount)
             {
                 var horse = FindHorse();
                 if (horse == null) return;
