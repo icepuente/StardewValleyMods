@@ -82,6 +82,8 @@ namespace HorseWhistle
 
             if (e.Button == _config.TeleportHorseKey && !Game1.player.isRidingHorse() && !Game1.player.isAnimatingMount)
             {
+                PlayHorseWhistle(); //play the whistle noise for the whistling player (even if the warp doesn't succeed)
+
                 if (Context.IsMainPlayer)
                     WarpHorse();
                 else //if the current player is a multiplayer farmhand
@@ -201,7 +203,6 @@ namespace HorseWhistle
                 return;
 
             //warp the horse to the target player
-            PlayHorseWhistle();
             Game1.warpCharacter(horse, player.currentLocation, player.getTileLocation());
         }
 
