@@ -60,12 +60,12 @@ namespace HorseWhistle
             }
 
             // add event listeners
-            helper.Events.Input.ButtonPressed += this.OnButtonPressed;
+            helper.Events.Input.ButtonPressed += OnButtonPressed;
             helper.Events.Multiplayer.ModMessageReceived += ModMessageReceived;
             if (_config.EnableGrid)
             {
-                helper.Events.GameLoop.UpdateTicked += this.UpdateTicked;
-                helper.Events.Display.Rendered += this.OnRendered;
+                helper.Events.GameLoop.UpdateTicked += UpdateTicked;
+                helper.Events.Display.Rendered += OnRendered;
             }
         }
 
@@ -148,7 +148,7 @@ namespace HorseWhistle
         /// <summary>Get all available locations.</summary>
         private IEnumerable<GameLocation> GetLocations()
         {
-            GameLocation[] mainLocations = (Context.IsMainPlayer ? Game1.locations : this.Helper.Multiplayer.GetActiveLocations()).ToArray();
+            GameLocation[] mainLocations = (Context.IsMainPlayer ? Game1.locations : Helper.Multiplayer.GetActiveLocations()).ToArray();
 
             foreach (GameLocation location in mainLocations.Concat(MineShaft.activeMines))
             {
@@ -167,7 +167,7 @@ namespace HorseWhistle
         /// <summary>Find the current player's horse.</summary>
         private Horse FindHorse()
         {
-            foreach (GameLocation location in this.GetLocations())
+            foreach (GameLocation location in GetLocations())
             {
                 foreach (Horse horse in location.characters.OfType<Horse>())
                 {
