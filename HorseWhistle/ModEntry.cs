@@ -80,16 +80,25 @@ namespace HorseWhistle
         {
             if (!Context.IsPlayerFree) return;
 
-            if (e.Button == _config.TeleportHorseKey && !Game1.player.isRidingHorse() && !Game1.player.isAnimatingMount)
+            if (IsTeleportHorseInputPressed(e.Button) && !Game1.player.isRidingHorse() && !Game1.player.isAnimatingMount)
             {
+                Helper.Input.Suppress(e.Button);
                 PlayHorseWhistle(); //play the whistle noise for the whistling player (even if the warp doesn't succeed)
 
                 if (Context.IsMainPlayer)
-                    WarpHorse();
+                    WarpHorse(Game1.player, _config.MountOnSummon);
+                    
                 else //if the current player is a multiplayer farmhand
-                    Helper.Multiplayer.SendMessage(true, "RequestHorse", new[] {ModManifest.UniqueID}); //request a horse from the host player
+                {
+                    Helper.Multiplayer.SendMessage(true, "RequestHorse", new[] { ModManifest.UniqueID }); //request a horse from the host player
+                }
             }
             else if (_config.EnableGrid && e.Button == _config.EnableGridKey) _gridActive = !_gridActive;
+        }
+
+        private bool IsTeleportHorseInputPressed(SButton button)
+        {
+            return button == _config.TeleportHorseKey || button == _config.TeleportHorseButton;
         }
 
         /// <summary>Raised after the a mod message is received over the network.</summary>
@@ -103,7 +112,7 @@ namespace HorseWhistle
             if (e.Type == "RequestHorse")
             {
                 Farmer requester = Game1.getFarmer(e.FromPlayerID);
-                if (requester != null) WarpHorse(requester);
+                if (requester != null) WarpHorse(requester, _config.MountOnSummon);
             }
         }
 
@@ -182,7 +191,7 @@ namespace HorseWhistle
 
         /// <summary>Warps a horse to a player's location.</summary>
         /// <param name="player">The player to which the horse will warp. If null, this will default to the current player.</param>
-        private void WarpHorse(Farmer player = null)
+        private void WarpHorse(Farmer player = null, bool mountOnSummon = false)
         {
             //default to the current player
             if (player == null) player = Game1.player;
@@ -196,6 +205,10 @@ namespace HorseWhistle
 
             //warp the horse to the target player
             Game1.warpCharacter(horse, player.currentLocation, player.getTileLocation());
+            if (mountOnSummon)
+            {
+                horse.checkAction(player, player.currentLocation);
+            }
         }
 
         private void UpdateGrid()
