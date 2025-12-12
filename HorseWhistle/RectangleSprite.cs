@@ -5,7 +5,7 @@ namespace HorseWhistle
 {
     internal static class RectangleSprite
     {
-        static Texture2D _pointTexture;
+        private static Texture2D? _pointTexture;
 
         public static void DrawRectangle(SpriteBatch spriteBatch, Rectangle rectangle, Color color, int lineWidth)
         {

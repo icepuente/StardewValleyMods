@@ -21,12 +21,12 @@ namespace HorseWhistle
         /*********
         ** Properties
         *********/
-        private TileData[] _tiles;
+        private TileData[]? _tiles;
         private bool _gridActive;
-        private ISoundBank _customSoundBank;
-        private WaveBank _customWaveBank;
+        private ISoundBank? _customSoundBank;
+        private WaveBank? _customWaveBank;
         private bool _hasAudio;
-        private ModConfigModel _config;
+        private ModConfigModel _config = null!; // Initialized in Entry()
 
 
         /*********
@@ -44,11 +44,15 @@ namespace HorseWhistle
             {
                 try
                 {
-                    _customSoundBank = new SoundBankWrapper(new SoundBank(Game1.audioEngine.Engine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb")));
-                    _customWaveBank = new WaveBank(Game1.audioEngine.Engine, Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
+                    // SDV 1.6+ uses MonoGame which requires relative paths from the game directory
+                    string soundBankPath = Path.Combine("Mods", "HorseWhistle", "assets", "CustomSoundBank.xsb");
+                    string waveBankPath = Path.Combine("Mods", "HorseWhistle", "assets", "CustomWaveBank.xwb");
+
+                    _customSoundBank = new SoundBankWrapper(new SoundBank(Game1.audioEngine.Engine, soundBankPath));
+                    _customWaveBank = new WaveBank(Game1.audioEngine.Engine, waveBankPath);
                     _hasAudio = true;
                 }
-                catch (ArgumentException ex)
+                catch (Exception ex)
                 {
                     _customSoundBank = null;
                     _customWaveBank = null;
@@ -76,7 +80,7 @@ namespace HorseWhistle
         /// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
-        private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
+        private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
         {
             if (!Context.IsPlayerFree) return;
 
@@ -95,14 +99,14 @@ namespace HorseWhistle
         /// <summary>Raised after the a mod message is received over the network.</summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
-        private void ModMessageReceived(object sender, ModMessageReceivedEventArgs e)
+        private void ModMessageReceived(object? sender, ModMessageReceivedEventArgs e)
         {
             if (!Context.IsMainPlayer) return;
 
             //if a multiplayer farmhand sent a horse request, warp a horse to them
             if (e.Type == "RequestHorse")
             {
-                Farmer requester = Game1.getFarmer(e.FromPlayerID);
+                Farmer? requester = Game1.GetPlayer(e.FromPlayerID);
                 if (requester != null) WarpHorse(requester);
             }
         }
@@ -110,7 +114,7 @@ namespace HorseWhistle
         /// <summary>Raised after the game state is updated (≈60 times per second).</summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
-        private void UpdateTicked(object sender, UpdateTickedEventArgs e)
+        private void UpdateTicked(object? sender, UpdateTickedEventArgs e)
         {
             if (e.IsMultipleOf(2)) UpdateGrid();
         }
@@ -118,7 +122,7 @@ namespace HorseWhistle
         /// <summary>Raised after the game draws to the sprite patch in a draw tick, just before the final sprite batch is rendered to the screen.</summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
-        private void OnRendered(object sender, RenderedEventArgs e)
+        private void OnRendered(object? sender, RenderedEventArgs e)
         {
             DrawGrid(e.SpriteBatch);
         }
@@ -148,24 +152,23 @@ namespace HorseWhistle
         /// <summary>Get all available locations.</summary>
         private IEnumerable<GameLocation> GetLocations()
         {
-            GameLocation[] mainLocations = (Context.IsMainPlayer ? Game1.locations : Helper.Multiplayer.GetActiveLocations()).ToArray();
+            GameLocation[] mainLocations = (Context.IsMainPlayer ? Game1.locations : this.Helper.Multiplayer.GetActiveLocations()).ToArray();
 
             foreach (GameLocation location in mainLocations.Concat(MineShaft.activeMines))
             {
                 yield return location;
 
-                if (location is BuildableGameLocation buildableLocation)
+                // In SDV 1.6+, all GameLocations have a buildings property (BuildableGameLocation was removed)
+                foreach (Building building in location.buildings)
                 {
-                    foreach (Building building in buildableLocation.buildings)
-                    {
-                        if (building.indoors.Value != null) yield return building.indoors.Value;
-                    }
+                    if (building.indoors.Value != null)
+                        yield return building.indoors.Value;
                 }
             }
         }
 
         /// <summary>Find the current player's horse.</summary>
-        private Horse FindHorse()
+        private Horse? FindHorse()
         {
             foreach (GameLocation location in GetLocations())
             {
@@ -182,7 +185,7 @@ namespace HorseWhistle
 
         /// <summary>Warps a horse to a player's location.</summary>
         /// <param name="player">The player to which the horse will warp. If null, this will default to the current player.</param>
-        private void WarpHorse(Farmer player = null)
+        private void WarpHorse(Farmer? player = null)
         {
             //default to the current player
             if (player == null) player = Game1.player;
@@ -195,7 +198,7 @@ namespace HorseWhistle
             if (horse == null) return;
 
             //warp the horse to the target player
-            Game1.warpCharacter(horse, player.currentLocation, player.getTileLocation());
+            Game1.warpCharacter(horse, player.currentLocation, player.Tile);
         }
 
         private void UpdateGrid()
@@ -208,7 +211,7 @@ namespace HorseWhistle
 
             // get updated tiles
             var location = Game1.currentLocation;
-            _tiles = CommonMethods.GetVisibleTiles(location, Game1.viewport).Where(tile => location.isTileLocationTotallyClearAndPlaceableIgnoreFloors(tile)).Select(tile => new TileData(tile, Color.Red)).ToArray();
+            _tiles = CommonMethods.GetVisibleTiles(location, Game1.viewport).Where(tile => location.isTilePassable(tile)).Select(tile => new TileData(tile, Color.Red)).ToArray();
         }
 
         private void DrawGrid(SpriteBatch spriteBatch)
