@@ -44,11 +44,15 @@ namespace HorseWhistle
             {
                 try
                 {
-                    _customSoundBank = new SoundBankWrapper(new SoundBank(Game1.audioEngine.Engine, Path.Combine(helper.DirectoryPath, "assets", "CustomSoundBank.xsb")));
-                    _customWaveBank = new WaveBank(Game1.audioEngine.Engine, Path.Combine(helper.DirectoryPath, "assets", "CustomWaveBank.xwb"));
+                    // SDV 1.6+ uses MonoGame which requires relative paths from the game directory
+                    string soundBankPath = Path.Combine("Mods", "HorseWhistle", "assets", "CustomSoundBank.xsb");
+                    string waveBankPath = Path.Combine("Mods", "HorseWhistle", "assets", "CustomWaveBank.xwb");
+
+                    _customSoundBank = new SoundBankWrapper(new SoundBank(Game1.audioEngine.Engine, soundBankPath));
+                    _customWaveBank = new WaveBank(Game1.audioEngine.Engine, waveBankPath);
                     _hasAudio = true;
                 }
-                catch (ArgumentException ex)
+                catch (Exception ex)
                 {
                     _customSoundBank = null;
                     _customWaveBank = null;
