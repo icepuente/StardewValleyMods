@@ -40,6 +40,19 @@ namespace HorseWhistle
             _config = helper.ReadConfig<ModConfigModel>();
 
             // set up sounds
+            SetupAudio();
+
+            // add event listeners
+            helper.Events.Input.ButtonPressed += OnButtonPressed;
+            helper.Events.Multiplayer.ModMessageReceived += ModMessageReceived;
+            helper.Events.GameLoop.GameLaunched += OnGameLaunched;
+            helper.Events.GameLoop.UpdateTicked += UpdateTicked;
+            helper.Events.Display.Rendered += OnRendered;
+        }
+
+        /// <summary>Set up audio for the whistle sound.</summary>
+        private void SetupAudio()
+        {
             if (Constants.TargetPlatform == GamePlatform.Windows && _config.EnableWhistleAudio)
             {
                 try
@@ -62,15 +75,72 @@ namespace HorseWhistle
                     Monitor.Log(ex.ToString());
                 }
             }
+        }
 
-            // add event listeners
-            helper.Events.Input.ButtonPressed += OnButtonPressed;
-            helper.Events.Multiplayer.ModMessageReceived += ModMessageReceived;
-            if (_config.EnableGrid)
-            {
-                helper.Events.GameLoop.UpdateTicked += UpdateTicked;
-                helper.Events.Display.Rendered += OnRendered;
-            }
+        /// <summary>Raised after the game is launched, right before the first update tick.</summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event data.</param>
+        private void OnGameLaunched(object? sender, GameLaunchedEventArgs e)
+        {
+            // Get Generic Mod Config Menu API
+            var configMenu = Helper.ModRegistry.GetApi<IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
+            if (configMenu is null)
+                return;
+
+            // Register mod
+            configMenu.Register(
+                mod: ModManifest,
+                reset: () => _config = new ModConfigModel(),
+                save: () => Helper.WriteConfig(_config)
+            );
+
+            // Add section title
+            configMenu.AddSectionTitle(
+                mod: ModManifest,
+                text: () => "General Settings"
+            );
+
+            // Add whistle keybind option
+            configMenu.AddKeybind(
+                mod: ModManifest,
+                getValue: () => _config.TeleportHorseKey,
+                setValue: value => _config.TeleportHorseKey = value,
+                name: () => "Summon Horse Key",
+                tooltip: () => "The key to press to summon your horse to your location."
+            );
+
+            // Add whistle audio option
+            configMenu.AddBoolOption(
+                mod: ModManifest,
+                getValue: () => _config.EnableWhistleAudio,
+                setValue: value => _config.EnableWhistleAudio = value,
+                name: () => "Enable Whistle Sound",
+                tooltip: () => "Whether to play the whistle sound effect when summoning your horse. (Windows only)"
+            );
+
+            // Add debug section title
+            configMenu.AddSectionTitle(
+                mod: ModManifest,
+                text: () => "Debug Options"
+            );
+
+            // Add grid option
+            configMenu.AddBoolOption(
+                mod: ModManifest,
+                getValue: () => _config.EnableGrid,
+                setValue: value => _config.EnableGrid = value,
+                name: () => "Enable Debug Grid",
+                tooltip: () => "Enable the debug tile grid overlay feature."
+            );
+
+            // Add grid keybind option
+            configMenu.AddKeybind(
+                mod: ModManifest,
+                getValue: () => _config.EnableGridKey,
+                setValue: value => _config.EnableGridKey = value,
+                name: () => "Toggle Grid Key",
+                tooltip: () => "The key to press to toggle the debug tile grid overlay."
+            );
         }
 
 
@@ -203,7 +273,7 @@ namespace HorseWhistle
 
         private void UpdateGrid()
         {
-            if (!_gridActive || !Context.IsPlayerFree || Game1.currentLocation == null)
+            if (!_config.EnableGrid || !_gridActive || !Context.IsPlayerFree || Game1.currentLocation == null)
             {
                 _tiles = null;
                 return;
@@ -216,7 +286,7 @@ namespace HorseWhistle
 
         private void DrawGrid(SpriteBatch spriteBatch)
         {
-            if (!_gridActive || !Context.IsPlayerFree || _tiles == null || _tiles.Length == 0) return;
+            if (!_config.EnableGrid || !_gridActive || !Context.IsPlayerFree || _tiles == null || _tiles.Length == 0) return;
 
             // draw tile overlay
             const int tileSize = Game1.tileSize;
